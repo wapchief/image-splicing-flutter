@@ -46,7 +46,15 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
 
   bool loading = false;
 
+  bool lineRow = true;
+  bool lineColumn = true;
+
   Future<void> createPdf() async {
+    if (loading) {
+      return;
+    }
+    loading = true;
+    setState(() {});
     final pdf = pw.Document();
 
     // 计算每张图片的宽度和高度以适应页面大小
@@ -76,6 +84,25 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
               height: pageHeight / numRows,
             );
             rowWidgets.add(img);
+            // 分割线
+            if (lineColumn) {
+              rowWidgets.add(
+                pw.Container(
+                  width: 1,
+                  height: pageHeight / numRows,
+                  color: const PdfColor.fromInt(0x20000000),
+                ),
+              );
+            }
+            // if (lineRow) {
+            //   rowWidgets.add(
+            //     pw.Container(
+            //       width: 1,
+            //       height: pageWidth / numCols,
+            //       color: const PdfColor.fromInt(0x20000000),
+            //     ),
+            //   );
+            // }
           }
         }
         imageWidgets.add(pw.Row(children: rowWidgets));
@@ -98,7 +125,8 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
 
     var outputFile = File('${outputDir.path}/output.pdf');
     await outputFile.writeAsBytes(uList);
-    // final outputXFile = XFile('${outputDir.path}/output.pdf',bytes: uList);
+    loading = false;
+    setState(() {});
     await launchUrl(Uri.file(outputFile.path));
     return;
     showDialog(
@@ -158,21 +186,65 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
               },
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final imagePicker = ImagePicker();
-              final pickedFile = await imagePicker.pickMultiImage();
-              setState(() {
-                selectedImages = pickedFile;
-                // selectedImages
-              });
-            },
-            child: Text('添加图片'),
-          ),
-          SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: createPdf,
-            child: Text('拼接图片并生成PDF'),
+          Divider(),
+          Row(
+            children: [
+              Column(
+                children: [
+                  // Row(
+                  //   children: [
+                  //     Switch.adaptive(
+                  //       value: lineRow,
+                  //       materialTapTargetSize: MaterialTapTargetSize.padded,
+                  //       onChanged: (v) {
+                  //         setState(() {
+                  //           lineRow = v;
+                  //         });
+                  //       },
+                  //     ),
+                  //     Text('横向分割线', style: TextStyle(color: Colors.grey)),
+                  //   ],
+                  // ),
+                  Row(
+                    children: [
+                      Switch.adaptive(
+                          value: lineColumn,
+                          onChanged: (v) {
+                            setState(() {
+                              lineColumn = v;
+                            });
+                          }),
+                      Text(
+                        '分割线',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(
+                width: 100,
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final imagePicker = ImagePicker();
+                  final pickedFile = await imagePicker.pickMultiImage();
+                  setState(() {
+                    selectedImages = pickedFile;
+                    // selectedImages
+                  });
+                },
+                child: Text('添加图片'),
+              ),
+              SizedBox(
+                width: 10,
+                height: 10,
+              ),
+              ElevatedButton(
+                onPressed: createPdf,
+                child: Text(loading ? '正在处理...' : '拼接图片并生成PDF'),
+              ),
+            ],
           ),
           SizedBox(height: 20),
         ],
