@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -40,9 +41,12 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
     ),
   );
 
-  final imagesPerPage = 15; // 每页包含的图片数量
-  final numRows = 3; // 每页行数
-  final numCols = 5; // 每页列数
+  int imagesPerPage = 15; // 每页包含的图片数量
+  int numRows = 3; // 每页行数
+  int numCols = 5; // 每页列数
+
+  TextEditingController controllerRows = TextEditingController(text: '3');
+  TextEditingController controllerCols = TextEditingController(text: '5');
 
   bool loading = false;
 
@@ -94,15 +98,6 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                 ),
               );
             }
-            // if (lineRow) {
-            //   rowWidgets.add(
-            //     pw.Container(
-            //       width: 1,
-            //       height: pageWidth / numCols,
-            //       color: const PdfColor.fromInt(0x20000000),
-            //     ),
-            //   );
-            // }
           }
         }
         imageWidgets.add(pw.Row(children: rowWidgets));
@@ -128,43 +123,12 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
     loading = false;
     setState(() {});
     await launchUrl(Uri.file(outputFile.path));
-    return;
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('是否保存文件？'),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('取消')),
-              TextButton(
-                onPressed: () async {
-                  final res = await FileSaver.instance
-                      .saveFile(name: 'output', file: outputFile, ext: 'pdf');
-                  debugPrint(res);
-                  await launchUrl(Uri.file(res));
-                  Navigator.of(context).pop();
-                },
-                child: Text('保存'),
-              ),
-            ],
-          );
-        });
-    // outputXFile.
-    // Utils.openFile(outputXFile.path);
-    // final result = await Share.shareXFiles([outputXFile], text: 'Great picture');
-    // if (result.status == ShareResultStatus.success) {
-    //   print('Thank you for sharing the picture!');
-    // }
+    // return;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Image to PDF Converter'),
-      ),
       body: Column(
         children: [
           Expanded(
@@ -175,7 +139,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                 return ListTile(
                   title: Text('${index + 1}、${imageFile.path}'),
                   trailing: IconButton(
-                    icon: Icon(Icons.delete),
+                    icon: const Icon(Icons.delete),
                     onPressed: () {
                       setState(() {
                         selectedImages.removeAt(index);
@@ -186,7 +150,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
               },
             ),
           ),
-          Divider(),
+          const Divider(),
           Row(
             children: [
               Column(
@@ -214,7 +178,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                               lineColumn = v;
                             });
                           }),
-                      Text(
+                      const Text(
                         '分割线',
                         style: TextStyle(color: Colors.grey),
                       ),
@@ -222,7 +186,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                   ),
                 ],
               ),
-              SizedBox(
+              const SizedBox(
                 width: 100,
               ),
               ElevatedButton(
@@ -236,7 +200,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                 },
                 child: Text('添加图片'),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 10,
                 height: 10,
               ),
@@ -244,9 +208,50 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                 onPressed: createPdf,
                 child: Text(loading ? '正在处理...' : '拼接图片并生成PDF'),
               ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30.0),
+                child: Column(
+                  children: [
+                    Text('每页行数'),
+                    SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: controllerRows,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        onChanged: (v) {
+                          numRows = int.tryParse(v) ?? 3;
+                          imagesPerPage = numRows * numCols;
+                          setState(() {});
+                        },
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Text('每页列数'),
+                  SizedBox(
+                    width: 50,
+                    child: TextField(
+                      controller: controllerCols,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      onChanged: (v) {
+                        numCols = int.tryParse(v) ?? 5;
+                        imagesPerPage = numRows * numCols;
+                        setState(() {});
+                      },
+                    ),
+                  )
+                ],
+              )
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
         ],
       ),
     );
